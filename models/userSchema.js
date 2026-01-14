@@ -11,18 +11,24 @@ const userSchema = mongoose.Schema({
     },
     password: {
         type: String,
-        required: true
+        required: true,
+        minlength: 6
     },
-    image:String,
-    startingDate: String,
-    personalLocker: String,
-    planType: String,
-    duration: String,
-    monthlyCost: String,
-    seat: String,
-    location: String,
-    active: String,
-    
+    otp: Number,
+    // otpExpiry: Date,
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
+
+    // image: String,
+    // startingDate: String,
+    // personalLocker: String,
+    // planType: String,
+    // duration: String,
+    // monthlyCost: String,
+    // seat: String,
+    // location: String,
+    // active: String,
+
 });
 
 const User = mongoose.model("User", userSchema);

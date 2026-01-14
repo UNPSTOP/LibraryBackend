@@ -4,12 +4,14 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const mongoose = require("mongoose");
+const cookieParser = require("cookie-parser");
 
 const UserRouter = require("./router/UserRouting.js")
 const PORT = process.env.PORT || 8000;
 
 app.use(express.json());
 app.use(cors());
+app.use(cookieParser());
 
 mongoose.connect(process.env.MONGO_URL)
 .then(() => {
