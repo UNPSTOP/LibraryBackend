@@ -39,7 +39,7 @@ const sendVerificationEmail = async (email) => {
     });
 
     return code; // save this in DB
-}; 
+};
 
 
 const signup = async (req, res) => {
@@ -54,7 +54,6 @@ const signup = async (req, res) => {
                     success: false
                 })
         }
-        console.log("1")
 
         if (password !== conformPasswoed || password.length < 6) {
             return res.status(400)
@@ -63,47 +62,60 @@ const signup = async (req, res) => {
                     success: false
                 });
         }
-console.log("2")
-        const exist = await User.findOne({ email:email });
+
+        const exist = await User.findOne({ email: email });
         if (exist) return res.status(409)
             .json({
                 message: "User already exists",
                 success: false
             });
-            console.log("3")
-       const otp = await sendVerificationEmail(email);
-       await UserOtp.create({
-        email:email,
-        OTP:otp});
-       console.log("4")
-        res.status(201)
-        .json({ 
-            message: "OTP sent", 
-            success: true,
+
+        const otp = await sendVerificationEmail(email);
+
+        await UserOtp.create({
+            email: email,
+            OTP: otp
         });
+
+        res.status(201)
+            .json({
+                message: "OTP sent",
+                success: true,
+            });
     } catch (err) {
         console.log(err)
         res.status(500)
-        .json({
-             message: "Server error",
-             success: false
-             });
+            .json({
+                message: "Server error",
+                success: false
+            });
     }
 };
 
 const OTPverify = async (req, res) => {
     try {
-        const { name,email,password, otp } = req.body;
-        const  finde=await UserOtp.findOne({email});
-        if(!finde){
-            return res.status(404).json({massage:"otp is  not  valid"})
+        const { name, email, password, otp } = req.body;
+        const finde = await UserOtp.findOne({ email });
+        if (!finde) {
+            return res.status(404).json({ massage: "otp is  not  valid find" })
         }
-        if(finde.OTP!=otp){
-            return res.status(404).json({massage:"otp is  not  valid"})
+        if (finde.OTP != otp) {
+            return res.status(404).json({ massage: "otp is  not  valid otp" })
         }
-       const data= await User.create(req.body)
-       await UserOtp.findByIdAndDelete({_id: finde._id});
-       const token="heloo"
+
+        const hashPassword = await bcrypt.hash(password, 10);
+
+        const data = await User.create({
+            name: name,
+            email: email,
+            password: hashPassword
+        });
+
+        setTimeout(async () => {
+            await UserOtp.findByIdAndDelete({ _id: finde._id });
+        }, 60 * 1000)
+
+        const token = generateToken(finde._id, finde.email);
         res.cookie("token", token, {
             httpOnly: true,
             secure: false,
@@ -111,21 +123,19 @@ const OTPverify = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
-        
-
         res.status(200)
-        .json({
-             message: "Signup successful",
-              success: true ,
-              data:data
+            .json({
+                message: "Signup successful",
+                success: true,
+                data: data
             });
 
     } catch (error) {
         res.status(500)
-        .json({
-             message: error.message,
-            success: false
-        });
+            .json({
+                message: error.message,
+                success: false
+            });
     }
 }
 
@@ -139,7 +149,7 @@ const resendOTP = async (req, res) => {
                     success: false
                 })
         }
-        const user = await User.findOne({ _id :userId });
+        const user = await User.findOne({ _id: userId });
         if (!user) {
             return res.status(404)
                 .json({
@@ -157,7 +167,7 @@ const resendOTP = async (req, res) => {
             .json({
                 message: "OTP Resend Successfully",
                 success: true,
-                userId : user._id
+                userId: user._id
             });
 
     } catch (err) {
@@ -213,12 +223,12 @@ const forgetPassword = async (req, res) => {
     try {
         const { email } = req.body;
 
-        if(!email){
+        if (!email) {
             return res.status(400)
-            .json({
-                message: "Email are required",
-                success: false
-            })
+                .json({
+                    message: "Email are required",
+                    success: false
+                })
         }
         const user = await User.findOne({ email: email });
         if (!user) {
@@ -231,15 +241,15 @@ const forgetPassword = async (req, res) => {
 
         const otp = await sendVerificationEmail(email);
 
-        user.otp = otp
-        user.otpExpires = Date.now() + 5 * 60 * 1000
+        user.otp = otp;
+        user.otpExpires = Date.now() + 5 * 60 * 1000;
+        user.isOtpVerified = false;
         await user.save();
 
         res.status(201).
             json({
                 message: "OTP sent to email",
                 success: true,
-                userId : user._id
             });
 
 
@@ -254,29 +264,26 @@ const forgetPassword = async (req, res) => {
 
 const otpResetPassword = async (req, res) => {
     try {
-        const {userId , otp } = req.body;
+        const { email, otp } = req.body;
 
-        if (!userId || !otp) {
+        if (!email || !otp) {
             return res.status(400).json({
                 message: "All fields required",
                 success: false
             });
         }
 
-        const user = await User.findOne({ _id :userId });
-        if (!user) {
-            return res.status(404).json({
-                message: "User not found",
-                success: false
-            });
+        const user = await User.findOne({ email: email });
+
+
+        if (!user || user.otp !== Number(otp)) {
+            return res.status(400)
+                .json({
+                    message: "Invalid OTP",
+                    success: false
+                });
         }
 
-        if (Number(otp) !== user.otp) {
-            return res.status(400).json({
-                message: "Invalid OTP",
-                success: false
-            });
-        }
 
         if (user.otpExpires < Date.now()) {
             return res.status(400).json({
@@ -287,18 +294,11 @@ const otpResetPassword = async (req, res) => {
 
         const resetToken = crypto.randomBytes(32).toString("hex");
 
-        user.resetPasswordToken = resetToken;
-        user.resetPasswordExpires = Date.now() + 5 * 60 * 1000;
-        user.otp = undefined;
-        user.otpExpires = undefined;
-
+        user.isOtpVerified = true;
         await user.save();
-
-        //Note:- frontend must store temporarily resetToken
 
         res.status(200).json({
             message: "OTP verified",
-            resetToken,
             success: true
         });
 
@@ -311,53 +311,44 @@ const otpResetPassword = async (req, res) => {
 };
 
 const resetPassword = async (req, res) => {
-    try {
-        const { resetToken, newPassword, conformPasswoed } = req.body;
+  try {
+    const { email, newPassword, confirmPassword } = req.body;
 
-        if (!resetToken || !newPassword || !conformPasswoed) {
-            return res.status(400).json({
-                message: "All fields required",
-                success: false
-            });
-        }
+    const user = await User.findOne({ email });
 
-        if (newPassword !== conformPasswoed || newPassword.length < 6) {
-            return res.status(400).json({
-                message: "Invalid password",
-                success: false
-            });
-        }
-
-        const user = await User.findOne({
-            resetPasswordToken: resetToken,
-            resetPasswordExpires: { $gt: Date.now() }
-        });
-
-        if (!user) {
-            return res.status(400).json({
-                message: "Invalid or expired reset token",
-                success: false
-            });
-        }
-
-        user.password = await bcrypt.hash(newPassword, 10);
-        user.resetPasswordToken = undefined;
-        user.resetPasswordExpires = undefined;
-
-        await user.save();
-
-        res.status(200).json({
-            message: "Password reset successful",
-            success: true
-        });
-
-    } catch (err) {
-        res.status(500).json({
-            message: "Server error",
-            success: false
-        });
+    if (!user || !user.isOtpVerified) {
+      return res.status(403).json({
+        message: "OTP verification required",
+        success: false
+      });
     }
+
+    if (newPassword !== confirmPassword || newPassword.length < 6) {
+      return res.status(400).json({
+        message: "Invalid password",
+        success: false
+      });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+
+    // cleanup
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    user.isOtpVerified = false;
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Password reset successful",
+      success: true
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: "Server error", success: false });
+  }
 };
+
 
 const Verifyemail = async (req, res) => {
     try {
