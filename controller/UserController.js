@@ -7,10 +7,6 @@ const nodemailer = require("nodemailer");
 const generateToken = require("../utiliy.js");
 
 
-// let code = 0;
-// let email = "";
-
-
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
