@@ -9,8 +9,16 @@ const generateToken = require("../utiliy.js");
 
 // let code = 0;
 // let email = "";
+async function otpvery(req, res) {
+    try {
+        const { email, otp } = req.body;
 
 
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ massage: error })
+    }
+}
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -23,7 +31,7 @@ const generateCode = () => {
     return Math.floor(1000 + Math.random() * 9000);
 };
 
-const sendVerificationEmail = async (email) => {
+const sendVerificationEmail = async(email) => {
     code = generateCode();
 
     await transporter.sendMail({
@@ -42,7 +50,7 @@ const sendVerificationEmail = async (email) => {
 };
 
 
-const signup = async (req, res) => {
+const signup = async(req, res) => {
 
     try {
         const { name, email, password, conformPasswoed } = req.body;
@@ -69,6 +77,7 @@ const signup = async (req, res) => {
                 message: "User already exists",
                 success: false
             });
+        await UserOtp.findOneAndDelete({ email });
 
         const otp = await sendVerificationEmail(email);
 
@@ -92,7 +101,7 @@ const signup = async (req, res) => {
     }
 };
 
-const OTPverify = async (req, res) => {
+const OTPverify = async(req, res) => {
     try {
         const { name, email, password, otp } = req.body;
         const finde = await UserOtp.findOne({ email });
@@ -110,11 +119,7 @@ const OTPverify = async (req, res) => {
             email: email,
             password: hashPassword
         });
-
-        setTimeout(async () => {
-            await UserOtp.findByIdAndDelete({ _id: finde._id });
-        }, 60 * 1000)
-
+        await UserOtp.findByIdAndDelete({ _id: finde._id });
         const token = generateToken(finde._id, finde.email);
         res.cookie("token", token, {
             httpOnly: true,
@@ -139,7 +144,7 @@ const OTPverify = async (req, res) => {
     }
 }
 
-const resendOTP = async (req, res) => {
+const resendOTP = async(req, res) => {
     try {
         const { userId } = req.body;
         if (!userId) {
@@ -175,7 +180,7 @@ const resendOTP = async (req, res) => {
     }
 }
 
-const login = async (req, res) => {
+const login = async(req, res) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email: email });
@@ -219,7 +224,7 @@ const login = async (req, res) => {
     }
 };
 
-const forgetPassword = async (req, res) => {
+const forgetPassword = async(req, res) => {
     try {
         const { email } = req.body;
 
@@ -230,7 +235,8 @@ const forgetPassword = async (req, res) => {
                     success: false
                 })
         }
-        const user = await User.findOne({ email: email });
+
+        const user = await User.findOne({ email });
         if (!user) {
             return res.status(400)
                 .json({
@@ -238,19 +244,21 @@ const forgetPassword = async (req, res) => {
                     success: false
                 })
         }
+        await UserOtp.findOneAndDelete({ email });
 
         const otp = await sendVerificationEmail(email);
 
-        user.otp = otp;
-        user.otpExpires = Date.now() + 5 * 60 * 1000;
-        user.isOtpVerified = false;
-        await user.save();
+        await UserOtp.create({
+            email: email,
+            OTP: otp
+        });
+
 
         res.status(201).
-            json({
-                message: "OTP sent to email",
-                success: true,
-            });
+        json({
+            message: "OTP sent to email",
+            success: true,
+        });
 
 
     } catch (err) {
@@ -262,7 +270,7 @@ const forgetPassword = async (req, res) => {
     }
 }
 
-const otpResetPassword = async (req, res) => {
+const otpResetPassword = async(req, res) => {
     try {
         const { email, otp } = req.body;
 
@@ -310,47 +318,47 @@ const otpResetPassword = async (req, res) => {
     }
 };
 
-const resetPassword = async (req, res) => {
-  try {
-    const { email, newPassword, confirmPassword } = req.body;
+const resetPassword = async(req, res) => {
+    try {
+        const { email, newPassword, confirmPassword } = req.body;
 
-    const user = await User.findOne({ email });
+        const user = await User.findOne({ email });
 
-    if (!user || !user.isOtpVerified) {
-      return res.status(403).json({
-        message: "OTP verification required",
-        success: false
-      });
+        if (!user || !user.isOtpVerified) {
+            return res.status(403).json({
+                message: "OTP verification required",
+                success: false
+            });
+        }
+
+        if (newPassword !== confirmPassword || newPassword.length < 6) {
+            return res.status(400).json({
+                message: "Invalid password",
+                success: false
+            });
+        }
+
+        user.password = await bcrypt.hash(newPassword, 10);
+
+        // cleanup
+        user.otp = undefined;
+        user.otpExpires = undefined;
+        user.isOtpVerified = false;
+
+        await user.save();
+
+        res.status(200).json({
+            message: "Password reset successful",
+            success: true
+        });
+
+    } catch (err) {
+        res.status(500).json({ message: "Server error", success: false });
     }
-
-    if (newPassword !== confirmPassword || newPassword.length < 6) {
-      return res.status(400).json({
-        message: "Invalid password",
-        success: false
-      });
-    }
-
-    user.password = await bcrypt.hash(newPassword, 10);
-
-    // cleanup
-    user.otp = undefined;
-    user.otpExpires = undefined;
-    user.isOtpVerified = false;
-
-    await user.save();
-
-    res.status(200).json({
-      message: "Password reset successful",
-      success: true
-    });
-
-  } catch (err) {
-    res.status(500).json({ message: "Server error", success: false });
-  }
 };
 
 
-const Verifyemail = async (req, res) => {
+const Verifyemail = async(req, res, ) => {
     try {
         console.log(req.body)
         const founded = await User.findOne({ email: req.body.email })
