@@ -299,9 +299,7 @@ const otpResetPassword = async(req, res) => {
                 success: false
             });
         }
-
-        const resetToken = crypto.randomBytes(32).toString("hex");
-
+        
         user.isOtpVerified = true;
         await user.save();
 
