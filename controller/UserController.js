@@ -5,20 +5,12 @@ const bcrypt = require('bcrypt');
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const generateToken = require("../utiliy.js");
+const jwt = require('jsonwebtoken')
 
 
 // let code = 0;
 // let email = "";
-async function otpvery(req, res) {
-    try {
-        const { email, otp } = req.body;
 
-
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({ massage: error })
-    }
-}
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -66,7 +58,7 @@ const signup = async(req, res) => {
         if (password !== conformPasswoed || password.length < 6) {
             return res.status(400)
                 .json({
-                    message: "Password invalid",
+                    massage: "Password invalid",
                     success: false
                 });
         }
@@ -104,6 +96,7 @@ const signup = async(req, res) => {
 const OTPverify = async(req, res) => {
     try {
         const { name, email, password, otp } = req.body;
+        console.log(req.body)
         const finde = await UserOtp.findOne({ email });
         if (!finde) {
             return res.status(404).json({ massage: "otp is  not  valid find" })
@@ -144,41 +137,7 @@ const OTPverify = async(req, res) => {
     }
 }
 
-const resendOTP = async(req, res) => {
-    try {
-        const { userId } = req.body;
-        if (!userId) {
-            return res.status(400)
-                .json({
-                    message: "All fild's are required",
-                    success: false
-                })
-        }
-        const user = await User.findOne({ _id: userId });
-        if (!user) {
-            return res.status(404)
-                .json({
-                    message: "User not found",
-                    success: false
-                })
-        }
-        const newotp = await sendVerificationEmail(user.email);
 
-        user.otp = newotp;
-        user.otpExpires = Date.now() + 5 * 60 * 1000;
-
-        await user.save();
-        res.status(200)
-            .json({
-                message: "OTP Resend Successfully",
-                success: true,
-                userId: user._id
-            });
-
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-}
 
 const login = async(req, res) => {
     try {
@@ -222,46 +181,84 @@ const login = async(req, res) => {
                 success: false
             })
     }
+
 };
 
-const forgetPassword = async(req, res) => {
+async function Verifyemail(req, res) {
     try {
         const { email } = req.body;
+        const found = await User.findOne({ email });
+        if (!found) {
+            return res.status(404).json({ massage: "inValidd Email" });
 
-        if (!email) {
-            return res.status(400)
-                .json({
-                    message: "Email are required",
-                    success: false
-                })
-        }
-
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400)
-                .json({
-                    message: "Wrong email",
-                    success: false
-                })
         }
         await UserOtp.findOneAndDelete({ email });
-
         const otp = await sendVerificationEmail(email);
-
         await UserOtp.create({
             email: email,
             OTP: otp
         });
 
+        res.status(201)
+            .json({
+                message: "OTP sent",
+                success: true,
+            });
 
-        res.status(201).
-        json({
-            message: "OTP sent to email",
-            success: true,
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ massage: error })
+    }
+}
+
+async function verfyOTP(req, res) {
+    try {
+        const { email, otp } = req.body;
+        const found = await UserOtp.findOne({ email });
+        if (!found) {
+            return res.status(404).json({ massage: "inValidd Email" });
+        }
+        if (found.OTP != otp) {
+            return res.status(404).json({ massage: "otp is  not  valid otp" })
+        }
+        await UserOtp.findOneAndDelete({ email });
+        const userfounded = await User.findOne({ email });
+        const token = generateToken(userfounded._id, userfounded.email);
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false,
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000
         });
+        res.status(200).json({ massage: "sucessfuly", })
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ massage: error })
+    }
+}
+
+
+
+const forgetPassword = async(req, res) => {
+    try {
+        const { password, conformPasswoed } = req.body;
+        const token = req.cookies.token;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const Found = await User.findById(decoded.id);
+        if (conformPasswoed != password) {
+            return res.status(400).json({ massage: "Password not match" })
+        }
+        if (!Found) {
+            return res.status(404).json({ massage: " user  not exist  try aging " })
+        }
+        const hashPassword = await bcrypt.hash(password, 10);
+        Found.password = hashPassword
+        await Found.save();
+        res.status(200).json({ massage: "Fassword changed suceess fuly" })
 
 
     } catch (err) {
+        console.log(err)
         res.status(500)
             .json({
                 message: "Somthing worng in interval server",
@@ -270,124 +267,12 @@ const forgetPassword = async(req, res) => {
     }
 }
 
-const otpResetPassword = async(req, res) => {
-    try {
-        const { email, otp } = req.body;
-
-        if (!email || !otp) {
-            return res.status(400).json({
-                message: "All fields required",
-                success: false
-            });
-        }
-
-        const user = await User.findOne({ email: email });
-
-
-        if (!user || user.otp !== Number(otp)) {
-            return res.status(400)
-                .json({
-                    message: "Invalid OTP",
-                    success: false
-                });
-        }
-
-
-        if (user.otpExpires < Date.now()) {
-            return res.status(400).json({
-                message: "OTP expired",
-                success: false
-            });
-        }
-        
-        user.isOtpVerified = true;
-        await user.save();
-
-        res.status(200).json({
-            message: "OTP verified",
-            success: true
-        });
-
-    } catch (err) {
-        res.status(500).json({
-            message: "Server error",
-            success: false
-        });
-    }
-};
-
-const resetPassword = async(req, res) => {
-    try {
-        const { email, newPassword, confirmPassword } = req.body;
-
-        const user = await User.findOne({ email });
-
-        if (!user || !user.isOtpVerified) {
-            return res.status(403).json({
-                message: "OTP verification required",
-                success: false
-            });
-        }
-
-        if (newPassword !== confirmPassword || newPassword.length < 6) {
-            return res.status(400).json({
-                message: "Invalid password",
-                success: false
-            });
-        }
-
-        user.password = await bcrypt.hash(newPassword, 10);
-
-        // cleanup
-        user.otp = undefined;
-        user.otpExpires = undefined;
-        user.isOtpVerified = false;
-
-        await user.save();
-
-        res.status(200).json({
-            message: "Password reset successful",
-            success: true
-        });
-
-    } catch (err) {
-        res.status(500).json({ message: "Server error", success: false });
-    }
-};
-
-
-const Verifyemail = async(req, res, ) => {
-    try {
-        console.log(req.body)
-        const founded = await User.findOne({ email: req.body.email })
-        if (!founded) {
-            return res.status(400)
-                .json({
-                    massage: "Invalid  email",
-                    success: false
-                })
-        }
-        code = await sendVerificationEmail(req.body.email);
-
-        res.status(200).json({ message: "Email verified", });
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({ massage: 'somthing with  wrong' })
-    }
-}
 
 module.exports = {
-    //signup
     signup,
     OTPverify,
-    //Login
     login,
-    //I think it is userless
-    Verifyemail,
-    //use to forget Password
     forgetPassword,
-    otpResetPassword,
-    resetPassword,
-    // resend otp
-    resendOTP
+    Verifyemail,
+    verfyOTP
 }
