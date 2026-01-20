@@ -183,6 +183,15 @@ const login = async(req, res) => {
     }
 
 };
+const Logout = async(req, res) => {
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: false, // true in production (HTTPS)
+        sameSite: "strict"
+    });
+
+    res.json({ massage: "Logged out successfully" });
+}
 
 async function Verifyemail(req, res) {
     try {
@@ -240,33 +249,42 @@ async function verfyOTP(req, res) {
 
 
 const forgetPassword = async(req, res) => {
-    try {
-        const { password, conformPasswoed } = req.body;
-        const token = req.cookies.token;
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const Found = await User.findById(decoded.id);
-        if (conformPasswoed != password) {
-            return res.status(400).json({ massage: "Password not match" })
-        }
-        if (!Found) {
-            return res.status(404).json({ massage: " user  not exist  try aging " })
-        }
-        const hashPassword = await bcrypt.hash(password, 10);
-        Found.password = hashPassword
-        await Found.save();
-        res.status(200).json({ massage: "Fassword changed suceess fuly" })
+        try {
+            const { password, conformPasswoed } = req.body;
+            const token = req.cookies.token;
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const Found = await User.findById(decoded.id);
+            if (conformPasswoed != password) {
+                return res.status(400).json({ massage: "Password not match" })
+            }
+            if (!Found) {
+                return res.status(404).json({ massage: " user  not exist  try aging " })
+            }
+            const hashPassword = await bcrypt.hash(password, 10);
+            Found.password = hashPassword
+            await Found.save();
+            res.status(200).json({ massage: "Fassword changed suceess fuly" })
 
 
-    } catch (err) {
-        console.log(err)
-        res.status(500)
-            .json({
-                message: "Somthing worng in interval server",
-                success: false
-            })
+        } catch (err) {
+            console.log(err)
+            res.status(500)
+                .json({
+                    message: "Somthing worng in interval server",
+                    success: false
+                })
+        }
     }
-}
+    // const jwt = require('jsonwebtoken')
 
+const isLoging = async(req, res) => {
+    const token = req.cookies.token;
+    if (!token) return res.json({ massage: "token is empty" });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded) return res.json({ massage: "is not valid token" });
+    return res.status(200).json({ massage: "is valid token" })
+}
+module.exports = isLoging
 
 module.exports = {
     signup,
@@ -274,5 +292,7 @@ module.exports = {
     login,
     forgetPassword,
     Verifyemail,
-    verfyOTP
+    verfyOTP,
+    Logout,
+    isLoging
 }
