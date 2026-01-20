@@ -14,12 +14,7 @@ const userSchema = mongoose.Schema({
         required: true,
         minlength: 6
     },
-    otp: Number,
-    otpExpiry: Date,
-    isOtpVerified: {
-        type: Boolean,
-        default: false
-    }
+    
 
     // image: String,
     // startingDate: String,
