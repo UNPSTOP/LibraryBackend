@@ -113,7 +113,10 @@ const OTPverify = async(req, res) => {
             password: hashPassword
         });
         await UserOtp.findByIdAndDelete({ _id: finde._id });
-        const token = generateToken(finde._id, finde.email);
+        const token = jwt.sign({ id: data._id, email: data.email },
+            process.env.JWT_SECRET, { expiresIn: "7d" }
+        );
+        //  = generateToken(finde._id, finde.email);
         res.cookie("token", token, {
             httpOnly: true,
             secure: false,
@@ -159,7 +162,9 @@ const login = async(req, res) => {
                 })
         }
 
-        const token = generateToken(user._id, user.email);
+        const token = jwt.sign({ id: user._id, email: user.email },
+            process.env.JWT_SECRET, { expiresIn: "7d" }
+        );
 
         res.cookie("token", token, {
             httpOnly: true,
@@ -232,7 +237,10 @@ async function verfyOTP(req, res) {
         }
         await UserOtp.findOneAndDelete({ email });
         const userfounded = await User.findOne({ email });
-        const token = generateToken(userfounded._id, userfounded.email);
+        const token = jwt.sign({ id: userfounded._id, email: email },
+            process.env.JWT_SECRET, { expiresIn: "7d" }
+        );
+
         res.cookie("token", token, {
             httpOnly: true,
             secure: false,
@@ -249,33 +257,32 @@ async function verfyOTP(req, res) {
 
 
 const forgetPassword = async(req, res) => {
-        try {
-            const { password, conformPasswoed } = req.body;
-            const token = req.cookies.token;
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            const Found = await User.findById(decoded.id);
-            if (conformPasswoed != password) {
-                return res.status(400).json({ massage: "Password not match" })
-            }
-            if (!Found) {
-                return res.status(404).json({ massage: " user  not exist  try aging " })
-            }
-            const hashPassword = await bcrypt.hash(password, 10);
-            Found.password = hashPassword
-            await Found.save();
-            res.status(200).json({ massage: "Fassword changed suceess fuly" })
-
-
-        } catch (err) {
-            console.log(err)
-            res.status(500)
-                .json({
-                    message: "Somthing worng in interval server",
-                    success: false
-                })
+    try {
+        const { password, conformPasswoed } = req.body;
+        const token = req.cookies.token;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const Found = await User.findById(decoded.id);
+        if (conformPasswoed != password) {
+            return res.status(400).json({ massage: "Password not match" })
         }
+        if (!Found) {
+            return res.status(404).json({ massage: " user  not exist  try aging " })
+        }
+        const hashPassword = await bcrypt.hash(password, 10);
+        Found.password = hashPassword
+        await Found.save();
+        res.status(200).json({ massage: "Fassword changed suceess fuly" })
+
+
+    } catch (err) {
+        console.log(err)
+        res.status(500)
+            .json({
+                message: "Somthing worng in interval server",
+                success: false
+            })
     }
-    // const jwt = require('jsonwebtoken')
+}
 
 const isLoging = async(req, res) => {
     const token = req.cookies.token;
@@ -284,8 +291,6 @@ const isLoging = async(req, res) => {
     if (!decoded) return res.json({ massage: "is not valid token" });
     return res.status(200).json({ massage: "is valid token" })
 }
-module.exports = isLoging
-
 module.exports = {
     signup,
     OTPverify,
