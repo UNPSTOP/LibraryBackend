@@ -4,7 +4,7 @@ const UserOtp = require("../models/Otpstore");
 const bcrypt = require('bcrypt');
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
-const generateToken = require("../utiliy.js");
+// const generateToken = require("../utiliy.js");
 const jwt = require('jsonwebtoken')
 
 
@@ -46,7 +46,7 @@ const signup = async(req, res) => {
 
     try {
         const { name, email, password, conformPasswoed } = req.body;
-        console.log(req.body)
+        // console.log(req.body)
         if (!name || !email || !password || !conformPasswoed) {
             return res.status(400)
                 .json({
@@ -286,10 +286,11 @@ const forgetPassword = async(req, res) => {
 
 const isLoging = async(req, res) => {
     const token = req.cookies.token;
-    if (!token) return res.json({ massage: "token is empty" });
+    if (!token) return res.json({ massage: "token is empty", success: false });
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (!decoded) return res.json({ massage: "is not valid token" });
-    return res.status(200).json({ massage: "is valid token" })
+    console.log(token, decoded.email)
+    if (!decoded) return res.status(404).json({ massage: "not valid  user", success: false });
+    return res.status(200).json({ massage: "suceess fully", success: true })
 }
 module.exports = {
     signup,
