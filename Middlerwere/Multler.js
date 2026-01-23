@@ -14,6 +14,3 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 module.exports = upload;
-// import  in  routinh  const upload = require('../Middlewere/Multler')
-// also add this upload.single (file name)
-// like  upload.single('uploaded_file')

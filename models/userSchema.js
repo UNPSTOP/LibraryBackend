@@ -25,7 +25,8 @@ const userSchema = mongoose.Schema({
     Day_Remining: Number,
     Locker: Boolean,
     Floor: String,
-    Totalamount: Number
+    Totalamount: Number,
+    Enddate: String
 });
 
 const User = mongoose.model("User", userSchema);
