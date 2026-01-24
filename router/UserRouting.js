@@ -1,7 +1,7 @@
 const { signup, login, forgetPassword, Verifyemail, OTPverify, verfyOTP, Logout, isLoging } = require("../controller/UserController");
 const upload = require('../Middlerwere/Multler')
 const Autho = require('../Middlerwere/Autho')
-const { Adddata, SendData, Seatupdate, CancilSubscription, descrase, gaetSeat, topflor } = require('../UserPlanDetils/Plan')
+const { Adddata, SendData, Seatupdate, CancilSubscription, descrase, gaetSeat, topflor, cheqActive } = require('../UserPlanDetils/Plan')
 const router = require("express").Router();
 
 router.post('/signup', signup);
@@ -19,6 +19,7 @@ router.post('/SendData', Autho, SendData);
 router.put("/Seatupdate", Autho, Seatupdate);
 router.put("/CancilSubscription", Autho, CancilSubscription);
 router.get('/descrase', Autho, descrase)
-router.get('/gaetSeat', gaetSeat)
-router.get('/topflor', topflor)
+router.get('/gaetSeat', Autho, gaetSeat)
+router.get('/topflor', Autho, topflor)
+router.post('/cheqActive', Autho, cheqActive)
 module.exports = router;
