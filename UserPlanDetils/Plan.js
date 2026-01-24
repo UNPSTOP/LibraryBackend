@@ -7,7 +7,6 @@ const topSeetBooking = require("../models/Topflor")
 const Adddata = async(req, res) => {
     try {
         const token = req.cookies.token;
-
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const _id = decoded.id;
         const plandata = JSON.parse(req.body.PlaneData);
