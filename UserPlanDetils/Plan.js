@@ -7,7 +7,7 @@ const topSeetBooking = require("../models/Topflor")
 const Adddata = async(req, res) => {
     try {
         const token = req.cookies.token;
-        console.log(req.body)
+
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const _id = decoded.id;
         const plandata = JSON.parse(req.body.PlaneData);
@@ -17,7 +17,7 @@ const Adddata = async(req, res) => {
         const endDate = new Date(startDate);
         endDate.setDate(endDate.getDate() + Number(req.body.Day_Remining || 0));
         const formattedEndDate = endDate.toISOString().split("T")[0];
-        if (req.body.Location && req.body.Seat_Number != "0") {
+        if (plandata.premium && req.body.Seatnumber != "0") {
             const creted = await topSeetBooking.create({ seatNumber: req.body.Seatnumber, email: user2.email });
             if (!creted) return res.status(404).json({ massage: "set is  not avalibel" })
         } else {
@@ -48,12 +48,28 @@ const Adddata = async(req, res) => {
             }, { new: true }
         );
 
-        res.status(200).json({ massage: "bookend" })
+        res.status(200).json({ massage: "Youre  Plane is successfuly  Booked" })
     } catch (error) {
         console.log(error)
         res.status(500).json({ massage: error })
     }
 
+}
+
+
+const cheqActive = async(req, res) => {
+    try {
+        const token = req.cookies.token;
+        if (!token) return res.status(401).json({ message: "Login first" });
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (!decoded) return res.status(401).json({ message: "Login first" });
+        const _id = decoded.id;
+        const user2 = await User.findById(_id);
+        if (user2.Active) return res.status(404).json({ message: "You  can not book becouse you allready  booked  you cand  changa  nad  extend  youre  subcription", success: false })
+        return res.status(200).json({ success: true })
+    } catch (error) {
+        res.status(500).json({ message: "Somthing  went wrong" })
+    }
 }
 const SendData = async(req, res) => {
     try {
@@ -74,9 +90,10 @@ const Seatupdate = async(req, res) => {
         const token = req.cookies.token;
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const _id = decoded.id;
+        if (req.body.seat == "0") return res.status(404).json({ massage: "seat is no  seleccted" })
         const userfound = await User.findById(_id);
         userfound.Seat_Number = req.body.seat;
-        if (userfound.Location) {
+        if (userfound.Location == true) {
             await topSeetBooking.findOneAndUpdate({ email: userfound.email }, { seatNumber: req.body.seat });
         } else {
             await GroundSeatBooking.findOneAndUpdate({ email: userfound.email }, { seatNumber: req.body.seat });
@@ -98,7 +115,6 @@ const gaetSeat = async(req, res) => {
         const bookedSeats = booked.map(b => b.seatNumber);
         res.status(200).json({ data: bookedSeats })
     } catch (error) {
-        console.log(error);
         res.status(500).json({ massage: "somthing  went  wronge" })
 
     }
@@ -110,7 +126,6 @@ const topflor = async(req, res) => {
             const bookedSeats = booked.map(b => b.seatNumber);
             res.status(200).json({ data: bookedSeats })
         } catch (error) {
-            console.log(error);
             res.status(500).json({ massage: "somthing  went  wronge" })
 
         }
@@ -123,7 +138,6 @@ const CancilSubscription = async(req, res) => {
         const _id = decoded.id;
         const userfound = await User.findById(_id);
         userfound.Active = false;
-        console.log("loction ", userfound.Location);
 
         if (userfound.Location) {
             await topSeetBooking.deleteOne({ email: userfound.email })
@@ -134,7 +148,6 @@ const CancilSubscription = async(req, res) => {
         await userfound.save()
         res.status(200).json({ massage: "Subcription cancile" })
     } catch (error) {
-        console.log(error)
         res.status(500).json({ massage: "somthin went  wrong" })
     }
 }
@@ -168,7 +181,6 @@ const descrase = async(req, res) => {
         updateRemainingDays(user);
         await user.save()
     } catch (error) {
-        console.log(error)
         res.status(500).json({ massage: "somthing  went  wrong" })
     }
 
@@ -176,4 +188,4 @@ const descrase = async(req, res) => {
 
 
 
-module.exports = { Adddata, SendData, Seatupdate, CancilSubscription, descrase, gaetSeat, topflor }
+module.exports = { Adddata, SendData, Seatupdate, CancilSubscription, descrase, gaetSeat, topflor, cheqActive }

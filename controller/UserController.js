@@ -84,7 +84,6 @@ const signup = async(req, res) => {
                 success: true,
             });
     } catch (err) {
-        console.log(err)
         res.status(500)
             .json({
                 message: "Server error",
@@ -96,7 +95,6 @@ const signup = async(req, res) => {
 const OTPverify = async(req, res) => {
     try {
         const { name, email, password, otp } = req.body;
-        console.log(req.body)
         const finde = await UserOtp.findOne({ email });
         if (!finde) {
             return res.status(404).json({ massage: "otp is  not  valid find" })
@@ -179,7 +177,6 @@ const login = async(req, res) => {
             })
 
     } catch (err) {
-        console.log(err);
         res.status(500)
             .json({
                 message: "Somting wrong in intervel Server",
@@ -288,7 +285,6 @@ const isLoging = async(req, res) => {
     const token = req.cookies.token;
     if (!token) return res.json({ massage: "token is empty", success: false });
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(token, decoded.email)
     if (!decoded) return res.status(404).json({ massage: "not valid  user", success: false });
     return res.status(200).json({ massage: "suceess fully", success: true })
 }
