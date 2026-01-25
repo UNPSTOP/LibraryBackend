@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken')
 const User = require("../models/userSchema");
 const GroundSeatBooking = require("../models/Groundflor");
 const topSeetBooking = require("../models/Topflor")
+const Complain = require("../models/Complain");
 
 // add  user  plan detials
 const Adddata = async(req, res) => {
@@ -186,5 +187,49 @@ const descrase = async(req, res) => {
 }
 
 
+const complainpush = async(req, res) => {
+    try {
+        const token = req.cookies.token;
+        if (!token) return res.status(401).json({ message: "Login first" });
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (!decoded) return res.status(401).json({ message: "Login first" });
+        const _id = decoded.id;
+        const user2 = await User.findById(_id);
+        await Complain.create({
+            name: user2.name,
+            email: user2.email,
+            image: user2.image,
+            Usercomplain: req.body.Usermassage,
+            complete: false
+        })
+        res.status(201).json({ message: "Complaint submitted successfully" });
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ massage: "internal error" })
+    }
+}
 
-module.exports = { Adddata, SendData, Seatupdate, CancilSubscription, descrase, gaetSeat, topflor, cheqActive }
+const getComplain = async(req, res) => {
+    try {
+        const data = await Complain.find()
+        res.status(200).json({ Data: data })
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ massage: "internal error" })
+    }
+}
+const markCompletcomplain = async(req, res) => {
+    try {
+        const { id } = req.params;
+        const deletedUser = await Complain.findById(id);
+
+        deletedUser.complete = true
+        await deletedUser.save()
+        res.status(200).json({ massage: "Complain complete" })
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ massage: "internal error" })
+    }
+}
+
+module.exports = { Adddata, SendData, Seatupdate, CancilSubscription, descrase, gaetSeat, topflor, cheqActive, complainpush, getComplain, markCompletcomplain }
