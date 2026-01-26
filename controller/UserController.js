@@ -9,8 +9,9 @@ const nodemailer = require("nodemailer");
    BREVO CONFIG (EMAIL)
 ======================= */
 
-
-/* =======================
+// 
+/* ===================EMAIL_USER=ia6234222@gmail.com
+EMAIL_PASS=iensrijzkjvkfrrd====
    OTP GENERATOR
 ======================= */
 const generateCode = () => {
@@ -23,9 +24,12 @@ const generateCode = () => {
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER, 
-    pass: process.env.EMAIL_PASS, 
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
+  connectionTimeout: 10000, // 10 sec
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
 /* =======================
    SEND OTP EMAIL
@@ -33,7 +37,7 @@ const transporter = nodemailer.createTransport({
 const sendVerificationEmail = async (email) => {
   try {
     const code = generateCode();
-
+     console.log("inside  sending otp")
     await transporter.sendMail({
       from: `"My App" <${process.env.EMAIL_USER}>`,
       to: email,
