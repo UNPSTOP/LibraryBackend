@@ -12,11 +12,14 @@ const jwt = require('jsonwebtoken')
 // let email = "";
 
 const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS, // app password
-    },
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS, // Gmail App Password
+  },
+  tls: {
+    rejectUnauthorized: false,
+  },
 });
 
 const generateCode = () => {
@@ -24,7 +27,7 @@ const generateCode = () => {
 };
 
 const sendVerificationEmail = async(email) => {
-    code = generateCode();
+   const code = generateCode();
 
     await transporter.sendMail({
         from: `"My App" <${process.env.EMAIL_USER}>`,
@@ -78,11 +81,10 @@ const signup = async(req, res) => {
             OTP: otp
         });
 
-        res.status(201)
-            .json({
-                message: "OTP sent",
-                success: true,
-            });
+        return res.status(201).json({
+  message: "OTP sent",
+  success: true,
+});
     } catch (err) {
         res.status(500)
             .json({
