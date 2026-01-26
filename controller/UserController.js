@@ -4,17 +4,11 @@ const User = require("../models/userSchema");
 const UserOtp = require("../models/Otpstore");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-
+const nodemailer = require("nodemailer");
 /* =======================
    BREVO CONFIG (EMAIL)
 ======================= */
-const SibApiV3Sdk = require("sib-api-v3-sdk");
 
-const client = SibApiV3Sdk.ApiClient.instance;
-const apiKey = client.authentications["api-key"];
-apiKey.apiKey = process.env.BREVO_API_KEY;
-
-const brevo = new SibApiV3Sdk.TransactionalEmailsApi();
 
 /* =======================
    OTP GENERATOR
@@ -24,20 +18,27 @@ const generateCode = () => {
 };
 
 /* =======================
+   NODEMAILER CONFIG
+======================= */
+const transporter = nodemailer.createTransport({
+  service: "gmail", // or smtp config
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+/* =======================
    SEND OTP EMAIL
 ======================= */
 const sendVerificationEmail = async (email) => {
   try {
     const code = generateCode();
 
-    await brevo.sendTransacEmail({
-      sender: {
-        email: "noreply@yourapp.com",
-        name: "My App",
-      },
-      to: [{ email }],
+    await transporter.sendMail({
+      from: `"My App" <${process.env.EMAIL_USER}>`,
+      to: email,
       subject: "Your Verification Code",
-      htmlContent: `
+      html: `
         <h2>Email Verification</h2>
         <h1>${code}</h1>
         <p>This code is valid for verification.</p>
@@ -46,10 +47,11 @@ const sendVerificationEmail = async (email) => {
 
     return code;
   } catch (error) {
-    console.error("Brevo Email Error:", error);
+    console.error("Nodemailer Error:", error);
     throw new Error("Failed to send OTP");
   }
 };
+
 
 /* =======================
    SIGNUP
