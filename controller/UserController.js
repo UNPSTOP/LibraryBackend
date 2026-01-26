@@ -269,7 +269,7 @@ const isLoging = async (req, res) => {
 ======================= */
 module.exports = {
   signup,
-  OTPverify,
+   OTPverify,
   login,
   Verifyemail,
   Logout,
