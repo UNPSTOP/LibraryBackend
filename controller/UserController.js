@@ -1,192 +1,542 @@
-require("dotenv").config();
+require('dotenv').config();
 const User = require("../models/userSchema");
 const UserOtp = require("../models/Otpstore");
-const bcrypt = require("bcrypt");
+const bcrypt = require('bcrypt');
+const crypto = require("crypto");
 const nodemailer = require("nodemailer");
-const jwt = require("jsonwebtoken");
+// const generateToken = require("../utiliy.js");
+const jwt = require('jsonwebtoken')
 
-/* ================= EMAIL CONFIG ================= */
 
+// let code = 0;
+// let email = "";
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+    pass: process.env.EMAIL_PASS,
+  },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
+});;
 
-/* ================= HELPERS ================= */
-
-const generateCode = () => Math.floor(1000 + Math.random() * 9000);
+const generateCode = () => {
+    return Math.floor(1000 + Math.random() * 9000);
+};
 
 const sendVerificationEmail = async (email) => {
-  const code = generateCode();
-
-  await transporter.sendMail({
-    from: `"Library App" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "Your OTP Code",
-    html: `
-      <h2>Email Verification</h2>
-      <p>Your OTP is:</p>
-      <h1>${code}</h1>
-      <p>Valid for 5 minutes</p>
-    `
-  });
-
-  return code;
-};
-
-const setCookie = (res, token) => {
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: true,        // REQUIRED for HTTPS
-    sameSite: "none",    // REQUIRED for Vercel
-    maxAge: 7 * 24 * 60 * 60 * 1000
-  });
-};
-
-/* ================= SIGNUP ================= */
-
-const signup = async (req, res) => {
   try {
-    const { name, email, password, confirmPassword } = req.body;
+    const code = generateCode();
 
-    if (!name || !email || !password || !confirmPassword) {
-      return res.status(400).json({ message: "All fields required" });
-    }
+    await transporter.sendMail({
+      from: `"My App" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Your Verification Code",
+      html: `
+        <h2>Email Verification</h2>
+        <h1>${code}</h1>
+        <p>This code expires in 5 minutes.</p>
+      `,
+    });
 
-    if (password !== confirmPassword || password.length < 6) {
-      return res.status(400).json({ message: "Invalid password" });
-    }
+    return code;
+  } catch (error) {
+    console.error("Email error:", error);
+    throw new Error("Failed to send OTP email");
+  }
+};
 
-    const exists = await User.findOne({ email });
-    if (exists) {
-      return res.status(409).json({ message: "User already exists" });
-    }
 
-    await UserOtp.findOneAndDelete({ email });
 
-    let otp;
+const signup = async(req, res) => {
+
     try {
-      otp = await sendVerificationEmail(email);
+        const { name, email, password, conformPasswoed } = req.body;
+        // console.log(req.body)
+        if (!name || !email || !password || !conformPasswoed) {
+            return res.status(400)
+                .json({
+                    message: "All fild's are required",
+                    success: false
+                })
+        }
+
+        if (password !== conformPasswoed || password.length < 6) {
+            return res.status(400)
+                .json({
+                    massage: "Password invalid",
+                    success: false
+                });
+        }
+
+        const exist = await User.findOne({ email: email });
+        if (exist) return res.status(409)
+            .json({
+                message: "User already exists",
+                success: false
+            });
+        await UserOtp.findOneAndDelete({ email });
+
+        const otp = await sendVerificationEmail(email);
+
+        await UserOtp.create({
+            email: email,
+            OTP: otp
+        });
+
+        return res.status(201).json({
+  message: "OTP sent",
+  success: true,
+});
     } catch (err) {
-      return res.status(500).json({ message: "Email failed" });
+        res.status(500)
+            .json({
+                message: "Server error",
+                success: false
+            });
     }
-
-    await UserOtp.create({ email, OTP: otp });
-
-    res.status(201).json({ message: "OTP sent", success: true });
-
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
-  }
 };
 
-/* ================= VERIFY OTP & CREATE USER ================= */
+const OTPverify = async(req, res) => {
+    try {
+        const { name, email, password, otp } = req.body;
+        const finde = await UserOtp.findOne({ email });
+        if (!finde) {
+            return res.status(404).json({ massage: "otp is  not  valid find" })
+        }
+        if (finde.OTP != otp) {
+            return res.status(404).json({ massage: "otp is  not  valid otp" })
+        }
 
-const OTPverify = async (req, res) => {
-  try {
-    const { name, email, password, otp } = req.body;
+        const hashPassword = await bcrypt.hash(password, 10);
 
-    const record = await UserOtp.findOne({ email });
-    if (!record || record.OTP != otp) {
-      return res.status(400).json({ message: "Invalid OTP" });
+        const data = await User.create({
+            name: name,
+            email: email,
+            password: hashPassword
+        });
+        await UserOtp.findByIdAndDelete({ _id: finde._id });
+        const token = jwt.sign({ id: data._id, email: data.email },
+            process.env.JWT_SECRET, { expiresIn: "7d" }
+        );
+        //  = generateToken(finde._id, finde.email);
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        res.status(200)
+            .json({
+                message: "Signup successful",
+                success: true,
+                data: data
+            });
+
+    } catch (error) {
+        res.status(500)
+            .json({
+                message: error.message,
+                success: false
+            });
     }
+}
 
-    const hash = await bcrypt.hash(password, 10);
+const generateCode = () => {
+    return Math.floor(1000 + Math.random() * 9000);
+};
 
-    const user = await User.create({
-      name,
-      email,
-      password: hash
+const sendVerificationEmail = async(email) => {
+   const code = generateCode();
+
+    await transporter.sendMail({
+        from: `"My App" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: "Your Verification Code",
+        html: `
+      <h2>Email Verification</h2>
+      <p>Your verification code is:</p>
+      <h1>${code}</h1>
+      <p>This code expires in 5 minutes.</p>
+    `,
     });
 
-    await UserOtp.deleteOne({ email });
+    return code; // save this in DB
+};
 
-    const token = jwt.sign(
-      { id: user._id, email },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
 
-    setCookie(res, token);
+const signup = async(req, res) => {
 
-    res.status(200).json({
-      message: "Signup successful",
-      success: true,
-      user
+    try {
+        const { name, email, password, conformPasswoed } = req.body;
+        // console.log(req.body)
+        if (!name || !email || !password || !conformPasswoed) {
+            return res.status(400)
+                .json({
+                    message: "All fild's are required",
+                    success: false
+                })
+        }
+
+        if (password !== conformPasswoed || password.length < 6) {
+            return res.status(400)
+                .json({
+                    massage: "Password invalid",
+                    success: false
+                });
+        }
+
+        const exist = await User.findOne({ email: email });
+        if (exist) return res.status(409)
+            .json({
+                message: "User already exists",
+                success: false
+            });
+        await UserOtp.findOneAndDelete({ email });
+
+        const otp = await sendVerificationEmail(email);
+
+        await UserOtp.create({
+            email: email,
+            OTP: otp
+        });
+
+        return res.status(201).json({
+  message: "OTP sent",
+  success: true,
+});
+    } catch (err) {
+        res.status(500)
+            .json({
+                message: "Server error",
+                success: false
+            });
+    }
+};
+
+const OTPverify = async(req, res) => {
+    try {
+        const { name, email, password, otp } = req.body;
+        const finde = await UserOtp.findOne({ email });
+        if (!finde) {
+            return res.status(404).json({ massage: "otp is  not  valid find" })
+        }
+        if (finde.OTP != otp) {
+            return res.status(404).json({ massage: "otp is  not  valid otp" })
+        }
+
+        const hashPassword = await bcrypt.hash(password, 10);
+
+        const data = await User.create({
+            name: name,
+            email: email,
+            password: hashPassword
+        });
+        await UserOtp.findByIdAndDelete({ _id: finde._id });
+        const token = jwt.sign({ id: data._id, email: data.email },
+            process.env.JWT_SECRET, { expiresIn: "7d" }
+        );
+        //  = generateToken(finde._id, finde.email);
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        res.status(200)
+            .json({
+                message: "Signup successful",
+                success: true,
+                data: data
+            });
+
+    } catch (error) {
+        res.status(500)
+            .json({
+                message: error.message,
+                success: false
+            });
+    }
+}
+
+const generateCode = () => {
+    return Math.floor(1000 + Math.random() * 9000);
+};
+
+const sendVerificationEmail = async(email) => {
+   const code = generateCode();
+
+    await transporter.sendMail({
+        from: `"My App" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: "Your Verification Code",
+        html: `
+      <h2>Email Verification</h2>
+      <p>Your verification code is:</p>
+      <h1>${code}</h1>
+      <p>This code expires in 5 minutes.</p>
+    `,
     });
 
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+    return code; // save this in DB
 };
 
-/* ================= LOGIN ================= */
 
-const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+const signup = async(req, res) => {
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
+    try {
+        const { name, email, password, conformPasswoed } = req.body;
+        // console.log(req.body)
+        if (!name || !email || !password || !conformPasswoed) {
+            return res.status(400)
+                .json({
+                    message: "All fild's are required",
+                    success: false
+                })
+        }
+
+        if (password !== conformPasswoed || password.length < 6) {
+            return res.status(400)
+                .json({
+                    massage: "Password invalid",
+                    success: false
+                });
+        }
+
+        const exist = await User.findOne({ email: email });
+        if (exist) return res.status(409)
+            .json({
+                message: "User already exists",
+                success: false
+            });
+        await UserOtp.findOneAndDelete({ email });
+
+        const otp = await sendVerificationEmail(email);
+
+        await UserOtp.create({
+            email: email,
+            OTP: otp
+        });
+
+        return res.status(201).json({
+  message: "OTP sent",
+  success: true,
+});
+    } catch (err) {
+        res.status(500)
+            .json({
+                message: "Server error",
+                success: false
+            });
+    }
+};
+
+const OTPverify = async(req, res) => {
+    try {
+        const { name, email, password, otp } = req.body;
+        const finde = await UserOtp.findOne({ email });
+        if (!finde) {
+            return res.status(404).json({ massage: "otp is  not  valid find" })
+        }
+        if (finde.OTP != otp) {
+            return res.status(404).json({ massage: "otp is  not  valid otp" })
+        }
+
+        const hashPassword = await bcrypt.hash(password, 10);
+
+        const data = await User.create({
+            name: name,
+            email: email,
+            password: hashPassword
+        });
+        await UserOtp.findByIdAndDelete({ _id: finde._id });
+        const token = jwt.sign({ id: data._id, email: data.email },
+            process.env.JWT_SECRET, { expiresIn: "7d" }
+        );
+        //  = generateToken(finde._id, finde.email);
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        res.status(200)
+            .json({
+                message: "Signup successful",
+                success: true,
+                data: data
+            });
+
+    } catch (error) {
+        res.status(500)
+            .json({
+                message: error.message,
+                success: false
+            });
+    }
+}
+
+
+
+const login = async(req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email: email });
+        if (!user) {
+            return res.status(409)
+                .json({
+                    message: "Auth failed email or password is wrong",
+                    success: false
+                })
+        }
+        const isPassEqual = await bcrypt.compare(password, user.password);
+        if (!isPassEqual) {
+            return res.status(400)
+                .json({
+                    message: "Auth failed email or password is wrong",
+                    success: false
+                })
+        }
+
+        const token = jwt.sign({ id: user._id, email: user.email },
+            process.env.JWT_SECRET, { expiresIn: "7d" }
+        );
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+        res.status(200)
+            .json({
+                message: "Login Successfully",
+                success: true
+            })
+
+    } catch (err) {
+        res.status(500)
+            .json({
+                message: "Somting wrong in intervel Server",
+                success: false
+            })
     }
 
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) {
-      return res.status(401).json({ message: "Invalid credentials" });
+};
+const Logout = async(req, res) => {
+    res.clearCookie("token", {
+        httpOnly: true,
+       secure: true,
+            sameSite: "none"
+    });
+
+    res.json({ massage: "Logged out successfully" });
+}
+
+async function Verifyemail(req, res) {
+    try {
+        const { email } = req.body;
+        const found = await User.findOne({ email });
+        if (!found) {
+            return res.status(404).json({ massage: "inValidd Email" });
+
+        }
+        await UserOtp.findOneAndDelete({ email });
+        const otp = await sendVerificationEmail(email);
+        await UserOtp.create({
+            email: email,
+            OTP: otp
+        });
+
+        res.status(201)
+            .json({
+                message: "OTP sent",
+                success: true,
+            });
+
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ massage: error })
     }
+}
 
-    const token = jwt.sign(
-      { id: user._id, email },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+async function verfyOTP(req, res) {
+    try {
+        const { email, otp } = req.body;
+        const found = await UserOtp.findOne({ email });
+        if (!found) {
+            return res.status(404).json({ massage: "inValidd Email" });
+        }
+        if (found.OTP != otp) {
+            return res.status(404).json({ massage: "otp is  not  valid otp" })
+        }
+        await UserOtp.findOneAndDelete({ email });
+        const userfounded = await User.findOne({ email });
+        const token = jwt.sign({ id: userfounded._id, email: email },
+            process.env.JWT_SECRET, { expiresIn: "7d" }
+        );
 
-    setCookie(res, token);
+        res.cookie("token", token, {
+            httpOnly: true,
+         secure: true,
+            sameSite: "none",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+        res.status(200).json({ massage: "sucessfuly", })
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ massage: error })
+    }
+}
 
-    res.json({ message: "Login successful", success: true });
 
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
 
-/* ================= LOGOUT ================= */
+const forgetPassword = async(req, res) => {
+    try {
+        const { password, conformPasswoed } = req.body;
+        const token = req.cookies.token;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const Found = await User.findById(decoded.id);
+        if (conformPasswoed != password) {
+            return res.status(400).json({ massage: "Password not match" })
+        }
+        if (!Found) {
+            return res.status(404).json({ massage: " user  not exist  try aging " })
+        }
+        const hashPassword = await bcrypt.hash(password, 10);
+        Found.password = hashPassword
+        await Found.save();
+        res.status(200).json({ massage: "Fassword changed suceess fuly" })
 
-const Logout = (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none"
-  });
 
-  res.json({ message: "Logged out" });
-};
+    } catch (err) {
+        console.log(err)
+        res.status(500)
+            .json({
+                message: "Somthing worng in interval server",
+                success: false
+            })
+    }
+}
 
-/* ================= CHECK LOGIN ================= */
-
-const isLoging = (req, res) => {
-  try {
+const isLoging = async(req, res) => {
     const token = req.cookies.token;
-    if (!token) return res.json({ success: false });
-
-    jwt.verify(token, process.env.JWT_SECRET);
-    res.json({ success: true });
-
-  } catch {
-    res.json({ success: false });
-  }
-};
-
-/* ================= EXPORT ================= */
-
+    if (!token) return res.json({ massage: "token is empty", success: false });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded) return res.status(404).json({ massage: "not valid  user", success: false });
+    return res.status(200).json({ massage: "suceess fully", success: true })
+}
 module.exports = {
-  signup,
-  OTPverify,
-  login,
-  Logout,
-  isLoging
-};
+    signup,
+    OTPverify,
+    login,
+    forgetPassword,
+    Verifyemail,
+    verfyOTP,
+    Logout,
+    isLoging
+} this is my full code  ok  when i  trung  to singup but  in reponce  i got server error  all time goes  in pandding why  how to fix  tell me  where  i am worng
