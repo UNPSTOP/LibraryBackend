@@ -34,6 +34,7 @@ const transporter = nodemailer.createTransport({
 /* =======================
    SEND OTP EMAIL
 ======================= */
+      // sendVerificationEmail
 const sendVerificationEmail = async (email) => {
   try {
     const code = generateCode();
