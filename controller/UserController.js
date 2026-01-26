@@ -34,28 +34,28 @@ const transporter = nodemailer.createTransport({
 /* =======================
    SEND OTP EMAIL
 ======================= */
-const sendVerificationEmail = async(email) => {
+const sendVerificationEmail = async (email) => {
+    const code = generateCode();
+
     try {
-        const code = generateCode();
-        console.log("inside  sending otp")
         await transporter.sendMail({
             from: `"My App" <${process.env.EMAIL_USER}>`,
             to: email,
             subject: "Your Verification Code",
             html: `
-        <h2>Email Verification</h2>
-        <h1>${code}</h1>
-        <p>This code is valid for verification.</p>
-      `,
+                <h2>Email Verification</h2>
+                <h1>${code}</h1>
+                <p>This code is valid for 5 minutes.</p>
+            `,
         });
 
+        console.log("OTP sent successfully:", code);
         return code;
     } catch (error) {
-        console.error("Nodemailer Error:", error);
-        throw new Error("Failed to send OTP");
+        console.error("Failed to send OTP:", error);
+        throw new Error("Failed to send OTP. Make sure your App Password is correct and SMTP ports are open.");
     }
 };
-
 
 /* =======================
    SIGNUP
