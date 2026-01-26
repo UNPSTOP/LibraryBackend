@@ -11,7 +11,7 @@ const jwt = require("jsonwebtoken");
 const SibApiV3Sdk = require("sib-api-v3-sdk");
 
 const client = SibApiV3Sdk.ApiClient.instance;
-const apiKey = client.authentications["api-key"];
+const apiKey = client.authentications["mlsn.b2001f4605977ce994c446eb77aa81ed9f2e45065a333c4a697fbbb0084577e4"];
 apiKey.apiKey = process.env.BREVO_API_KEY;
 
 const brevo = new SibApiV3Sdk.TransactionalEmailsApi();
