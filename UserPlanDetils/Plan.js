@@ -204,7 +204,7 @@ const complainpush = async(req, res) => {
         })
         res.status(201).json({ message: "Complaint submitted successfully" });
     } catch (error) {
-        console.log(error)
+        
         res.status(500).json({ massage: "internal error" })
     }
 }
@@ -214,7 +214,7 @@ const getComplain = async(req, res) => {
         const data = await Complain.find()
         res.status(200).json({ Data: data })
     } catch (error) {
-        console.log(error)
+        
         res.status(500).json({ massage: "internal error" })
     }
 }
