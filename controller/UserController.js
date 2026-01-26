@@ -21,10 +21,10 @@ const generateCode = () => {
    NODEMAILER CONFIG
 ======================= */
 const transporter = nodemailer.createTransport({
-  service: "gmail", // or smtp config
+  service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.EMAIL_USER, // ia6234222@gmail.com
+    pass: process.env.EMAIL_PASS, // Gmail App Password
   },
 });
 /* =======================
