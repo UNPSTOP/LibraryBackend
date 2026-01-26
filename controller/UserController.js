@@ -263,6 +263,62 @@ const isLoging = async (req, res) => {
     return res.json({ success: false });
   }
 };
+const verfyOTP = async(req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        const record = await UserOtp.findOne({ email });
+        if (!record || record.OTP != otp) {
+            return res.status(400).json({ message: "Invalid OTP" });
+        }
+
+        await UserOtp.findOneAndDelete({ email });
+
+        const user = await User.findOne({ email });
+
+        const token = jwt.sign({ id: user._id, email },
+            process.env.JWT_SECRET, { expiresIn: "7d" }
+        );
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        res.status(200).json({ message: "OTP verified" });
+    } catch (error) {
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+const forgetPassword = async(req, res) => {
+    try {
+        const { password, conformPasswoed } = req.body;
+        const token = req.cookies.token;
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (password !== conformPasswoed) {
+            return res.status(400).json({ message: "Password mismatch" });
+        }
+
+        user.password = await bcrypt.hash(password, 10);
+        await user.save();
+
+        res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+
 
 /* =======================
    EXPORTS
@@ -274,4 +330,6 @@ module.exports = {
   Verifyemail,
   Logout,
   isLoging,
+   verfyOTP,
+   forgetPassword
 };
