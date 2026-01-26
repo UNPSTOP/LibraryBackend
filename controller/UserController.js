@@ -5,24 +5,10 @@ const UserOtp = require("../models/Otpstore");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
-/* =======================
-   BREVO CONFIG (EMAIL)
-======================= */
-
-// 
-/* ===================EMAIL_USER=ia6234222@gmail.com
-EMAIL_PASS=iensrijzkjvkfrrd====
-   OTP GENERATOR
-======================= */
-const generateCode = () => {
-   console.log("otp genrete")
-    return Math.floor(1000 + Math.random() * 9000);
-};
 
 /* =======================
    NODEMAILER CONFIG
 ======================= */
-
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 465,
@@ -32,22 +18,30 @@ const transporter = nodemailer.createTransport({
         pass: process.env.EMAIL_PASS,
     },
 });
+
+/* =======================
+   OTP GENERATOR
+======================= */
+const generateCode = () => {
+    return Math.floor(1000 + Math.random() * 9000);
+};
+
 /* =======================
    SEND OTP EMAIL
 ======================= */
 const sendVerificationEmail = async(email) => {
     try {
         const code = generateCode();
-        console.log("inside  sending otp")
+
         await transporter.sendMail({
             from: `"My App" <${process.env.EMAIL_USER}>`,
             to: email,
             subject: "Your Verification Code",
             html: `
-        <h2>Email Verification</h2>
-        <h1>${code}</h1>
-        <p>This code is valid for verification.</p>
-      `,
+                <h2>Email Verification</h2>
+                <h1>${code}</h1>
+                <p>This code is valid for verification.</p>
+            `,
         });
 
         return code;
@@ -57,14 +51,13 @@ const sendVerificationEmail = async(email) => {
     }
 };
 
-
 /* =======================
    SIGNUP
 ======================= */
 const signup = async(req, res) => {
     try {
         const { name, email, password, conformPasswoed } = req.body;
-       console.log(req.body);
+
         if (!name || !email || !password || !conformPasswoed) {
             return res.status(400).json({
                 message: "All fields are required",
@@ -89,9 +82,7 @@ const signup = async(req, res) => {
 
         await UserOtp.findOneAndDelete({ email });
 
-        console.log("Before sending email");
         const otp = await sendVerificationEmail(email);
-        console.log("After sending email",otp);
 
         await UserOtp.create({
             email,
@@ -109,7 +100,6 @@ const signup = async(req, res) => {
         });
     }
 };
-
 /* =======================
    OTP VERIFY (SIGNUP)
 ======================= */
@@ -238,36 +228,6 @@ const Verifyemail = async(req, res) => {
         });
     }
 };
-
-/* =======================
-   LOGOUT
-======================= */
-const Logout = async(req, res) => {
-    res.clearCookie("token", {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-    });
-
-    res.json({ message: "Logged out successfully" });
-};
-
-/* =======================
-   CHECK LOGIN
-======================= */
-const isLoging = async(req, res) => {
-    try {
-        const token = req.cookies.token;
-        if (!token) {
-            return res.json({ success: false });
-        }
-
-        jwt.verify(token, process.env.JWT_SECRET);
-        return res.json({ success: true });
-    } catch {
-        return res.json({ success: false });
-    }
-};
 const verfyOTP = async(req, res) => {
     try {
         const { email, otp } = req.body;
@@ -298,6 +258,19 @@ const verfyOTP = async(req, res) => {
     }
 };
 
+
+/* =======================
+   LOGOUT
+======================= */
+const Logout = async(req, res) => {
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+    });
+
+    res.json({ message: "Logged out successfully" });
+};
 const forgetPassword = async(req, res) => {
     try {
         const { password, conformPasswoed } = req.body;
@@ -323,7 +296,22 @@ const forgetPassword = async(req, res) => {
     }
 };
 
+/* =======================
+   CHECK LOGIN
+======================= */
+const isLoging = async(req, res) => {
+    try {
+        const token = req.cookies.token;
+        if (!token) {
+            return res.json({ success: false });
+        }
 
+        jwt.verify(token, process.env.JWT_SECRET);
+        return res.json({ success: true });
+    } catch {
+        return res.json({ success: false });
+    }
+};
 
 /* =======================
    EXPORTS
@@ -335,6 +323,6 @@ module.exports = {
     Verifyemail,
     Logout,
     isLoging,
-    verfyOTP,
-    forgetPassword
+    forgetPassword,
+    verfyOTP
 };
