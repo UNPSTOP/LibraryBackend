@@ -4,58 +4,44 @@ const User = require("../models/userSchema");
 const UserOtp = require("../models/Otpstore");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
+const axios = require("axios");
 
-const generateCode = () => {
-  return Math.floor(1000 + Math.random() * 9000);
-};
+const generateCode = () => Math.floor(1000 + Math.random() * 9000);
 
-/* =======================
-   NODEMAILER CONFIG (BREVO)
-======================= */
-const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com",
-  port: 587,
-  secure: false, // MUST be false for 587
-  auth: {
-    user: process.env.BREVO_USER, // your brevo login email
-    pass: process.env.BREVO_PASS, // SMTP key (not password)
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-});
-
-/* =======================
-   SEND OTP EMAIL
-======================= */
-const sendVerificationEmail = async (email) => {
+const sendVerificationEmail = async (toEmail) => {
   const code = generateCode();
-  console.log("BREVO_USER:", process.env.BREVO_USER);
-console.log("BREVO_PASS EXISTS:", !!process.env.BREVO_PASS);
+
   try {
-    await transporter.sendMail({
-      from: `"My App" <${process.env.BREVO_USER}>`,
-      to: email,
-      subject: "Your Verification Code",
-      html: `
-        <h2>Email Verification</h2>
-        <h1>${code}</h1>
-        <p>This code is valid for 5 minutes.</p>
-      `,
-    });
+    await axios.post(
+      "https://api.brevo.com/v3/smtp/email",
+      {
+        sender: { 
+          name: process.env.BREVO_SENDER_NAME,
+          email: process.env.BREVO_SENDER_EMAIL 
+        },
+        to: [{ email: toEmail }],
+        subject: "Your Verification Code",
+        htmlContent: `
+          <h2>Email Verification</h2>
+          <h1>${code}</h1>
+          <p>This code is valid for 5 minutes.</p>
+        `,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": process.env.BREVO_API_KEY,
+        },
+      }
+    );
 
     console.log("✅ OTP sent successfully:", code);
     return code;
   } catch (error) {
-     console.error("❌ BREVO SMTP FULL ERROR ↓↓↓");
-  console.error(error);              // FULL ERROR
-  console.error(error.message);      // MESSAGE
-  console.error(error.response);     // SMTP RESPONSE
-  console.error(error.code);         // ERROR CODE
-  throw error;
+    console.error("❌ Brevo API Error:", error.response?.data || error.message);
+    throw error;
   }
-};
+};;
 /* =======================
    SIGNUP
 ======================= */
