@@ -31,7 +31,8 @@ const transporter = nodemailer.createTransport({
 ======================= */
 const sendVerificationEmail = async (email) => {
   const code = generateCode();
-
+  console.log("BREVO_USER:", process.env.BREVO_USER);
+console.log("BREVO_PASS EXISTS:", !!process.env.BREVO_PASS);
   try {
     await transporter.sendMail({
       from: `"My App" <${process.env.BREVO_USER}>`,
@@ -47,8 +48,12 @@ const sendVerificationEmail = async (email) => {
     console.log("✅ OTP sent successfully:", code);
     return code;
   } catch (error) {
-    console.error("❌ Failed to send OTP:", error);
-    throw new Error("Failed to send OTP via Brevo SMTP");
+     console.error("❌ BREVO SMTP FULL ERROR ↓↓↓");
+  console.error(error);              // FULL ERROR
+  console.error(error.message);      // MESSAGE
+  console.error(error.response);     // SMTP RESPONSE
+  console.error(error.code);         // ERROR CODE
+  throw error;
   }
 };
 /* =======================
