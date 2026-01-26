@@ -74,17 +74,17 @@ const signup = async(req, res) => {
             });
         await UserOtp.findOneAndDelete({ email });
 
-        const otp = await sendVerificationEmail(email);
+       let otp;
+    try {
+      otp = await sendVerificationEmail(email);
+    } catch (err) {
+      return res.status(500).json({ message: "Email failed" });
+    }
 
-        await UserOtp.create({
-            email: email,
-            OTP: otp
-        });
+    await UserOtp.create({ email, OTP: otp });
 
-        return res.status(201).json({
-  message: "OTP sent",
-  success: true,
-});
+    res.status(201).json({ message: "OTP sent", success: true });
+
     } catch (err) {
         res.status(500)
             .json({
