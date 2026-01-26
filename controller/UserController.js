@@ -84,7 +84,9 @@ const signup = async (req, res) => {
 
     await UserOtp.findOneAndDelete({ email });
 
-    const otp = await sendVerificationEmail(email);
+   console.log("Before sending email");
+const otp = await sendVerificationEmail(email);
+console.log("After sending email");
 
     await UserOtp.create({
       email,
