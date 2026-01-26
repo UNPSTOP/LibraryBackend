@@ -86,44 +86,23 @@ const signup = async(req, res) => {
             });
         }
 
-        // await UserOtp.findOneAndDelete({ email });
+        await UserOtp.findOneAndDelete({ email });
 
-        // console.log("Before sending email");
-        // const otp = await sendVerificationEmail(email);
-        // console.log(otp)
-            // console.log("After sending email");
+        console.log("Before sending email");
+        const otp = await sendVerificationEmail(email);
+        console.log(otp)
+            console.log("After sending email");
 
-        // await UserOtp.create({
-        //     email,
-        //     OTP: otp,
-        // });
-
-        // res.status(201).json({
-        //     message: "OTP sent",
-        //     success: true,
-        // });
-          const hashPassword = await bcrypt.hash(password, 10);
-         const user = await User.create({
-            name,
+        await UserOtp.create({
             email,
-            password: hashPassword,
-        });
-         const token = jwt.sign({ id: user._id, email: user.email },
-            process.env.JWT_SECRET, { expiresIn: "7d" }
-        );
-
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            OTP: otp,
         });
 
-        res.status(200).json({
-            message: "Signup successful",
+        res.status(201).json({
+            message: "OTP sent",
             success: true,
-            data: user,
         });
+         
     } catch (err) {
         res.status(500).json({
             message: err.message,
