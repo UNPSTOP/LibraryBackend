@@ -63,7 +63,7 @@ const sendVerificationEmail = async(email) => {
 const signup = async(req, res) => {
     try {
         const { name, email, password, conformPasswoed } = req.body;
-
+       console.log(req.body);
         if (!name || !email || !password || !conformPasswoed) {
             return res.status(400).json({
                 message: "All fields are required",
@@ -88,9 +88,9 @@ const signup = async(req, res) => {
 
         await UserOtp.findOneAndDelete({ email });
 
-        // console.log("Before sending email");
+        console.log("Before sending email");
         const otp = await sendVerificationEmail(email);
-        // console.log("After sending email");
+        console.log("After sending email",otp);
 
         await UserOtp.create({
             email,
