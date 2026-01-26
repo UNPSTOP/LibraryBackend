@@ -90,7 +90,8 @@ const signup = async(req, res) => {
 
         // console.log("Before sending email");
         const otp = await sendVerificationEmail(email);
-        // console.log("After sending email");
+        console.log(otp)
+            // console.log("After sending email");
 
         await UserOtp.create({
             email,
