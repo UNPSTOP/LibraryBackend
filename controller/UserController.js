@@ -304,4 +304,5 @@ module.exports = {
     verfyOTP,
     Logout,
     isLoging
-} this is my full code  ok  when i  trung  to singup but  in reponce  i got server error  all time goes  in pandding why  how to fix  tell me  where  i am worng
+}
+  // this is my full code  ok  when i  trung  to singup but  in reponce  i got server error  all time goes  in pandding why  how to fix  tell me  where  i am worng
