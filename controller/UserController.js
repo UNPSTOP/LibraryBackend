@@ -15,6 +15,7 @@ EMAIL_PASS=iensrijzkjvkfrrd====
    OTP GENERATOR
 ======================= */
 const generateCode = () => {
+   console.log("otp genrete")
     return Math.floor(1000 + Math.random() * 9000);
 };
 
