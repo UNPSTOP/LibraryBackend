@@ -262,9 +262,7 @@ const OTPverify = async(req, res) => {
     }
 }
 
-const generateCode = () => {
-    return Math.floor(1000 + Math.random() * 9000);
-};
+
 
 const sendVerificationEmail = async(email) => {
    const code = generateCode();
