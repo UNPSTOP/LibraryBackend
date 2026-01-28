@@ -48,7 +48,8 @@ const signup = async(req, res) => {
         res.cookie("token", token, {
             httpOnly: true,
             secure: true,
-            sameSite: "none",
+            sameSite: "lax",
+             path: "/"
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -99,7 +100,8 @@ const login = async(req, res) => {
         res.cookie("token", token, {
             httpOnly: true,
             secure: true,
-            sameSite: "none",
+            sameSite: "lax",
+             path: "/"
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -136,7 +138,8 @@ const Verifyemail = async(req, res) => {
         res.cookie("token", token, {
             httpOnly: true,
             secure: true,
-            sameSite: "none",
+            sameSite: "lax",
+             path: "/"
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -155,8 +158,8 @@ const Verifyemail = async(req, res) => {
 const Logout = async(req, res) => {
     res.clearCookie("token", {
         httpOnly: true,
-        secure: true,
-        sameSite: "none",
+        sameSite: "lax",
+             path: "/"
     });
 
     res.json({ message: "Logged out successfully" });
