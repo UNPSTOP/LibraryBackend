@@ -54,7 +54,7 @@ const Adddata = async(req, res) => {
         res.status(200).json({ massage: "Youre  Plane is successfuly  Booked" })
     } catch (error) {
         console.log(error)
-        res.status(500).json({ massage: error })
+        res.status(500).json({ massage: "inter nal selver error" })
     }
 
 }
