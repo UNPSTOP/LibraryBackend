@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const User = require("../models/userSchema");
 const UserOtp = require("../models/Otpstore");
+const Feedback=require("../models/Feedback");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
@@ -209,11 +210,24 @@ const forgetPassword = async(req, res) => {
 /* =======================
    EXPORTS
 ======================= */
+
+//  feed  back
+const Feedback = async(req, res) => {
+    try{
+        await Feedback.create(req.body)
+        res.status(200).json({message:"Feedback submitted"})
+    }catch(error){
+        console.log(error)
+        res.status(500).json({message:"internal server error"})
+    }
+}
+
 module.exports = {
     signup,
     login,
     Verifyemail,
     Logout,
     isLoging,
-    forgetPassword
+    forgetPassword,
+    Feedback
 };

@@ -1,4 +1,4 @@
-const { signup, login, forgetPassword, Verifyemail,  Logout, isLoging } = require("../controller/UserController");
+const { signup, login, forgetPassword, Verifyemail,  Logout, isLoging ,Feedback} = require("../controller/UserController");
 const upload = require('../controller/Middlerwere/Multler')
 const Autho = require('../controller/Middlerwere/Autho')
 const { Adddata, SendData, Seatupdate, CancilSubscription, descrase, gaetSeat, topflor, cheqActive, complainpush, getComplain, markCompletcomplain } = require('../UserPlanDetils/Plan')
@@ -7,6 +7,7 @@ const router = require("express").Router();
 
 router.post('/signup', signup);
 router.post('/login', login);
+router.post('/feedback',Feedback)
 router.post('/verfyemail', Verifyemail)
 // router.post('/otpverify', OTPverify);
 // router.post('/verfyOTP', verfyOTP);
