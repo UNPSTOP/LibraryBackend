@@ -11,7 +11,7 @@ const jwt = require("jsonwebtoken");
 const signup = async(req, res) => {
     try {
         const { name, email, password, conformPasswoed } = req.body;
-
+        console.log(req.body)
         if (!name || !email || !password || !conformPasswoed) {
             return res.status(400).json({
                 message: "All fields are required",
@@ -34,13 +34,14 @@ const signup = async(req, res) => {
             });
         }
 
-   
-       const hashPassword = await bcrypt.hash(password, 10);
+
+        const hashPassword = await bcrypt.hash(password, 10);
 
         const user = await User.create({
             name,
             email,
             password: hashPassword,
+            Active: false
         });
         const token = jwt.sign({ id: user._id, email: user.email },
             process.env.JWT_SECRET, { expiresIn: "7d" }
@@ -48,7 +49,7 @@ const signup = async(req, res) => {
         res.cookie("token", token, {
             httpOnly: true,
             secure: true,
- sameSite: "none",
+            sameSite: "none",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -58,7 +59,7 @@ const signup = async(req, res) => {
             data: user,
         });
 
-         
+
     } catch (err) {
         res.status(500).json({
             message: err.message,
@@ -99,7 +100,7 @@ const login = async(req, res) => {
         res.cookie("token", token, {
             httpOnly: true,
             secure: true,
-         sameSite: "none",
+            sameSite: "none",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
@@ -136,12 +137,12 @@ const Verifyemail = async(req, res) => {
         res.cookie("token", token, {
             httpOnly: true,
             secure: true,
-           sameSite: "none",
+            sameSite: "none",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         res.status(200).json({ message: "Email verifyed" });
-     
+
     } catch (error) {
         res.status(500).json({
             message: error.message,
@@ -155,7 +156,7 @@ const Verifyemail = async(req, res) => {
 const Logout = async(req, res) => {
     res.clearCookie("token", {
         httpOnly: true,
-    sameSite: "none",
+        sameSite: "none",
     });
 
     res.json({ message: "Logged out successfully" });

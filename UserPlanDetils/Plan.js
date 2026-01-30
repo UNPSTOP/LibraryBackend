@@ -7,11 +7,14 @@ const Complain = require("../models/Complain");
 // add  user  plan detials
 const Adddata = async(req, res) => {
     try {
+        console.log(req.body)
         const token = req.cookies.token;
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const _id = decoded.id;
+
         const plandata = JSON.parse(req.body.PlaneData);
         const user2 = await User.findById(_id);
+        console.log(user2)
         if (user2.Active) return res.status(404).json({ massage: "You  can not book becouse you allready  booked  you cand  changa  nad  extend  youre  subcription" })
         const startDate = new Date(req.body.startDate);
         const endDate = new Date(startDate);
@@ -204,7 +207,7 @@ const complainpush = async(req, res) => {
         })
         res.status(201).json({ message: "Complaint submitted successfully" });
     } catch (error) {
-        
+
         res.status(500).json({ massage: "internal error" })
     }
 }
@@ -214,7 +217,7 @@ const getComplain = async(req, res) => {
         const data = await Complain.find()
         res.status(200).json({ Data: data })
     } catch (error) {
-        
+
         res.status(500).json({ massage: "internal error" })
     }
 }
