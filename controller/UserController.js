@@ -212,7 +212,7 @@ const forgetPassword = async(req, res) => {
 ======================= */
 
 //  feed  back
-const Feedback = async(req, res) => {
+const Feedback1 = async(req, res) => {
     try{
         await Feedback.create(req.body)
         res.status(200).json({message:"Feedback submitted"})
@@ -229,5 +229,5 @@ module.exports = {
     Logout,
     isLoging,
     forgetPassword,
-    Feedback
+    Feedback1
 };
