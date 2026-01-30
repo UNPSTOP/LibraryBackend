@@ -5,59 +5,145 @@ const topSeetBooking = require("../models/Topflor")
 const Complain = require("../models/Complain");
 
 // add  user  plan detials
-const Adddata = async(req, res) => {
-    try {
-        console.log(req.body)
-        const token = req.cookies.token;
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const _id = decoded.id;
+const Adddata = async (req, res) => {
+  try {
+    console.log("REQ.BODY:", req.body);
 
-        const plandata = JSON.parse(req.body.PlaneData);
-        const user2 = await User.findById(_id);
-        console.log(user2)
-        if (user2.Active) return res.status(404).json({ massage: "You  can not book becouse you allready  booked  you cand  changa  nad  extend  youre  subcription" })
-        const startDate = new Date(req.body.startDate);
-        const endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + Number(req.body.Day_Remining || 0));
-        const formattedEndDate = endDate.toISOString().split("T")[0];
-        if (plandata.premium && req.body.Seatnumber != "0") {
-            const creted = await topSeetBooking.create({ seatNumber: req.body.Seatnumber, email: user2.email });
-            if (!creted) return res.status(404).json({ massage: "set is  not avalibel" })
-        } else {
-            if (req.body.Seatnumber != "0") {
-                const creted = await GroundSeatBooking.create({ seatNumber: req.body.Seatnumber, email: user2.email });
-                if (!creted) return res.status(404).json({ massage: "set is  not avalibel" })
+    // --- Verify Token ---
+    const token = req.cookies.token;
+    if (!token) return res.status(401).json({ massage: "No token provided" });
 
-            }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const _id = decoded.id;
 
-        }
-        await User.findByIdAndUpdate(
-            _id, {
-                $set: {
-                    image: req.file ? req.file.filename : undefined,
-                    Plan_Type: plandata.title,
-                    Duration: plandata.duration,
-                    Monthly_cost: plandata.price,
-                    Seat_Number: req.body.Seatnumber,
-                    Location: plandata.premium,
-                    Active: true,
-                    Starting_Date: req.body.startDate,
-                    Day_Remining: req.body.Day_Remining,
-                    Locker: req.body.locker,
-                    Floor: plandata.floors,
-                    Totalamount: req.body.Totalamount,
-                    Enddate: formattedEndDate
-                }
-            }, { new: true }
-        );
+    // --- Parse PlaneData safely ---
+    const plandata =
+      typeof req.body.PlaneData === "string"
+        ? JSON.parse(req.body.PlaneData)
+        : req.body.PlaneData;
 
-        res.status(200).json({ massage: "Youre  Plane is successfuly  Booked" })
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({ massage: "inter nal selver error" })
+    // --- Find User ---
+    const user2 = await User.findById(_id);
+    if (!user2)
+      return res.status(404).json({ massage: "User not found" });
+
+    if (user2.Active) {
+      return res.status(400).json({
+        massage:
+          "You cannot book because you already booked. You can't change or extend your subscription.",
+      });
     }
 
-}
+    // --- Dates ---
+    const startDate = new Date(req.body.startDate);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + Number(req.body.Day_Remining || 0));
+    const formattedEndDate = endDate.toISOString().split("T")[0];
+
+    // --- Seat Booking ---
+    const seatNumber = String(req.body.Seatnumber || "0");
+
+    if (plandata.premium && seatNumber !== "0") {
+      const created = await topSeetBooking.create({
+        seatNumber,
+        email: user2.email,
+      });
+      if (!created)
+        return res.status(400).json({ massage: "Seat is not available" });
+    } else if (seatNumber !== "0") {
+      const created = await GroundSeatBooking.create({
+        seatNumber,
+        email: user2.email,
+      });
+      if (!created)
+        return res.status(400).json({ massage: "Seat is not available" });
+    }
+
+    // --- Prepare User Update Object safely ---
+    const updateData = {
+      Plan_Type: plandata.title,
+      Duration: plandata.duration,
+      Monthly_cost: plandata.price,
+      Seat_Number: seatNumber,
+      Location: plandata.premium,
+      Active: true,
+      Starting_Date: req.body.startDate,
+      Day_Remining: Number(req.body.Day_Remining || 0),
+      Locker: req.body.locker === "true",
+      Floor: plandata.floors,
+      Totalamount: Number(req.body.Totalamount || 0),
+      Enddate: formattedEndDate,
+    };
+
+    // Only include image if file exists
+    if (req.file && req.file.filename) {
+      updateData.image = req.file.filename;
+    }
+
+    // --- Update User ---
+    await User.findByIdAndUpdate(_id, { $set: updateData }, { new: true });
+
+    // --- Success Response ---
+    res.status(200).json({ massage: "Your plan is successfully booked" });
+  } catch (error) {
+    console.error("Adddata ERROR:", error);
+    res.status(500).json({ massage: "Internal server error" });
+  }
+};
+
+// const Adddata = async(req, res) => {
+//     try {
+//         console.log(req.body)
+//         const token = req.cookies.token;
+//         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//         const _id = decoded.id;
+
+//         const plandata = JSON.parse(req.body.PlaneData);
+//         const user2 = await User.findById(_id);
+//         console.log(user2)
+//         if (user2.Active) return res.status(404).json({ massage: "You  can not book becouse you allready  booked  you cand  changa  nad  extend  youre  subcription" })
+//         const startDate = new Date(req.body.startDate);
+//         const endDate = new Date(startDate);
+//         endDate.setDate(endDate.getDate() + Number(req.body.Day_Remining || 0));
+//         const formattedEndDate = endDate.toISOString().split("T")[0];
+//         if (plandata.premium && req.body.Seatnumber != "0") {
+//             const creted = await topSeetBooking.create({ seatNumber: req.body.Seatnumber, email: user2.email });
+//             if (!creted) return res.status(404).json({ massage: "set is  not avalibel" })
+//         } else {
+//             if (req.body.Seatnumber != "0") {
+//                 const creted = await GroundSeatBooking.create({ seatNumber: req.body.Seatnumber, email: user2.email });
+//                 if (!creted) return res.status(404).json({ massage: "set is  not avalibel" })
+
+//             }
+
+//         }
+//         await User.findByIdAndUpdate(
+//             _id, {
+//                 $set: {
+//                     image: req.file ? req.file.filename : undefined,
+//                     Plan_Type: plandata.title,
+//                     Duration: plandata.duration,
+//                     Monthly_cost: plandata.price,
+//                     Seat_Number: req.body.Seatnumber,
+//                     Location: plandata.premium,
+//                     Active: true,
+//                     Starting_Date: req.body.startDate,
+//                     Day_Remining: req.body.Day_Remining,
+//                     Locker: req.body.locker,
+//                     Floor: plandata.floors,
+//                     Totalamount: req.body.Totalamount,
+//                     Enddate: formattedEndDate
+//                 }
+//             }, { new: true }
+//         );
+
+//         res.status(200).json({ massage: "Youre  Plane is successfuly  Booked" })
+//     } catch (error) {
+//         console.log(error)
+//         res.status(500).json({ massage: "inter nal selver error" })
+//     }
+
+// }
 
 
 const cheqActive = async(req, res) => {
