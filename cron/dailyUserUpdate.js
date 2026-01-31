@@ -3,7 +3,7 @@ const User = require("../models/userSchema"); // adjust path
 
 // Wrap your cron job in a function
 function startDailyUserUpdate() {
-    cron.schedule("* * * * * *", async() => { // every second for testing
+    cron.schedule("0 0 * * *", async() => { // every second for testing
         try {
             console.log("⏳ Running daily user plan update...");
 
@@ -24,3 +24,4 @@ function startDailyUserUpdate() {
 // Export the function
 
 module.exports = startDailyUserUpdate;
+
