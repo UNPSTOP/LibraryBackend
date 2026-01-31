@@ -180,13 +180,23 @@ const Seatupdate = async(req, res) => {
         const _id = decoded.id;
         if (req.body.seat == "0") return res.status(404).json({ massage: "seat is no  seleccted" })
         const userfound = await User.findById(_id);
-        userfound.Seat_Number = req.body.seat;
+
+
         if (userfound.Location == true) {
+            isvalid = await topSeetBooking.findOne({ email: userfound.email })
+            if (isvalid && isvalid.email != userfound.email) {
+                return res.status(404).json({ massage: "Allready  Booked You can not change chosee deffrent seat" })
+            }
             await topSeetBooking.findOneAndUpdate({ email: userfound.email }, { seatNumber: req.body.seat });
         } else {
+            isvalid = await GroundSeatBooking.findOne({ email: userfound.email })
+            if (isvalid && isvalid.email != userfound.email) {
+                return res.status(404).json({ massage: "Allready  Booked You can not change chosee deffrent seat" })
+            }
             await GroundSeatBooking.findOneAndUpdate({ email: userfound.email }, { seatNumber: req.body.seat });
 
         }
+        userfound.Seat_Number = req.body.seat;
         await userfound.save()
         res.status(200).json({ massage: "seat   update conform" })
 
