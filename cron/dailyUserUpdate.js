@@ -1,17 +1,41 @@
 const cron = require("node-cron");
-const User = require("../models/userSchema"); // adjust path
+const User = require("../models/userSchema");
+const GroundSeatBooking = require("../models/Groundflor");
+const topSeetBooking = require("../models/Topflor")// adjust path
 
-// Wrap your cron job in a function
 function startDailyUserUpdate() {
-    cron.schedule("0 0 * * *", async() => { // every second for testing
+    cron.schedule("0 0 * * *", async () => { // runs daily at midnight
         try {
             console.log("⏳ Running daily user plan update...");
 
-            await User.updateMany({ Active: true, Day_Remining: { $gt: 0 } }, { $inc: { Day_Remining: -1 } });
+            // Decrement remaining days for active users
+            await User.updateMany(
+                { Active: true, Day_Remining: { $gt: 0 } },
+                { $inc: { Day_Remining: -1 } }
+            );
 
-            await User.updateMany({ Active: true, Day_Remining: { $lte: 0 } }, { $set: { Active: false, Day_Remining: 0 } });
+            // Find users who should now become inactive
+            const usersToDeactivate = await User.find({
+                Active: true,
+                Day_Remining: { $lte: 0 }
+            });
 
-            console.log("✅ Daily user update completed");
+            // Mark them inactive and set remaining days to 0
+            await User.updateMany(
+                { _id: { $in: usersToDeactivate.map(u => u._id) } },
+                { $set: { Active: false, Day_Remining: 0 } }
+            );
+
+            // Delete seat bookings for these users
+            for (const user of usersToDeactivate) {
+                if (user.Location) {
+                    await topSeetBooking.deleteMany({ email: user.email });
+                } else {
+                    await GroundSeatBooking.deleteMany({ email: user.email });
+                }
+            }
+
+            console.log("✅ Daily user update and seat cleanup completed");
         } catch (error) {
             console.error(error);
         }
@@ -21,7 +45,4 @@ function startDailyUserUpdate() {
     });
 }
 
-// Export the function
-
 module.exports = startDailyUserUpdate;
-
