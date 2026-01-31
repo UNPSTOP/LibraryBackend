@@ -17,18 +17,18 @@ function fileValidator(req, res, next) {
     const videoTypes = [".mp4", ".mov", ".avi", ".mkv"];
 
     if (videoTypes.includes(ext)) {
-        return res.status(400).json({ message: "Videos are not allowed" });
+        return res.status(400).json({ massage: "Videos are not allowed" });
     }
 
     if (imageTypes.includes(ext)) {
         const sizeMB = file.size / (1024 * 1024);
         if (sizeMB > 5) {
-            return res.status(400).json({ message: "Image size exceeds 5MB" });
+            return res.status(400).json({ massage: "Image size exceeds 5MB" });
         }
         return next(); // valid image
     }
 
-    return res.status(400).json({ message: "Invalid file type" });
+    return res.status(400).json({ massage: "Invalid file type" });
 }
 router.post('/signup', signup);
 router.post('/login', login);
@@ -59,3 +59,4 @@ router.put('/markcomplete/:id', markCompletcomplain)
 
 
 module.exports = router;
+
