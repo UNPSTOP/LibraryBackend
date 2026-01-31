@@ -250,39 +250,39 @@ const CancilSubscription = async(req, res) => {
     }
 }
 
-function updateRemainingDays(user) {
-    if (!user.Active) return user;
+// function updateRemainingDays(user) {
+//     if (!user.Active) return user;
 
-    const today = new Date();
-    const startDate = new Date(user.Starting_Date);
+//     const today = new Date();
+//     const startDate = new Date(user.Starting_Date);
 
-    const diffTime = today - startDate;
-    const passedDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+//     const diffTime = today - startDate;
+//     const passedDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-    const remaining = user.Day_Remining - passedDays;
+//     const remaining = user.Day_Remining - passedDays;
 
-    user.Day_Remining = remaining > 0 ? remaining : 0;
+//     user.Day_Remining = remaining > 0 ? remaining : 0;
 
-    if (user.Day_Remining === 0) {
-        user.Active = false;
-    }
+//     if (user.Day_Remining === 0) {
+//         user.Active = false;
+//     }
 
-    return user;
-}
+//     return user;
+// }
 
-const descrase = async(req, res) => {
-    try {
-        const token = req.cookies.token;
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const _id = decoded.id;
-        const user = await User.findById(_id);
-        updateRemainingDays(user);
-        await user.save()
-    } catch (error) {
-        res.status(500).json({ massage: "somthing  went  wrong" })
-    }
+// const descrase = async(req, res) => {
+//     try {
+//         const token = req.cookies.token;
+//         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//         const _id = decoded.id;
+//         const user = await User.findById(_id);
+//         updateRemainingDays(user);
+//         await user.save()
+//     } catch (error) {
+//         res.status(500).json({ massage: "somthing  went  wrong" })
+//     }
 
-}
+// }
 
 
 const complainpush = async(req, res) => {
