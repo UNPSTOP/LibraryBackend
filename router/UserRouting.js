@@ -6,30 +6,19 @@ const { deaskbordData, Deleteuser } = require('../AminAccess/Addmin')
 const router = require("express").Router();
 const multer = require("multer");
 const path = require("path");
+// eValidator.js (CLEAN CONTROLLER)
 function fileValidator(req, res) {
-    if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
-    }
+  if (!req.file) {
+    return res.status(400).json({ massage: "No file uploaded" });
+  }
 
-    const file = req.file;
-    const ext = path.extname(file.originalname).toLowerCase();
-    const imageTypes = [".jpg", ".jpeg", ".png"];
-    const videoTypes = [".mp4", ".mov", ".avi", ".mkv"];
-
-    if (videoTypes.includes(ext)) {
-        return res.status(400).json({ massage: "Videos are not allowed" });
-    }
-
-    if (imageTypes.includes(ext)) {
-        const sizeMB = file.size / (1024 * 1024);
-        if (sizeMB > 5) {
-            return res.status(400).json({ massage: "Image size exceeds 5MB" });
-        }
-        return res.status(200).json({massage:"Valid"})
-    }
-
-    return res.status(400).json({ massage: "Invalid file type" });
+  return res.status(200).json({
+    massage: "Image uploaded successfully",
+    file: req.file.filename,
+  });
 }
+
+module.exports = fileValidator;
 router.post('/signup', signup);
 router.post('/login', login);
 router.post('/feedback', Feedback1)
@@ -41,7 +30,7 @@ router.post('/isLoging', isLoging);
 router.post('/changepassword', forgetPassword)
 
 //  User  plan detials 
-router.post("/fileValidator", Autho,upload.single('UserImg'),fileValidator );
+router.post("/fileValidator", Autho,upload.single('UserImg'), fileValidator);
 router.post('/Adduserplanedata', Autho, upload.single('UserImg'), Adddata)
 router.post('/SendData', Autho, SendData);
 router.put("/Seatupdate", Autho, Seatupdate);
@@ -60,6 +49,7 @@ router.put('/markcomplete/:id', markCompletcomplain)
 
 
 module.exports = router;
+
 
 
 
