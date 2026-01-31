@@ -6,7 +6,7 @@ const { deaskbordData, Deleteuser } = require('../AminAccess/Addmin')
 const router = require("express").Router();
 const multer = require("multer");
 const path = require("path");
-function fileValidator(req, res, next) {
+function fileValidator(req, res) {
     if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
     }
@@ -25,7 +25,7 @@ function fileValidator(req, res, next) {
         if (sizeMB > 5) {
             return res.status(400).json({ massage: "Image size exceeds 5MB" });
         }
-        return next(); // valid image
+        return res.status(200).json({massage:"Valid"})
     }
 
     return res.status(400).json({ massage: "Invalid file type" });
@@ -41,7 +41,8 @@ router.post('/isLoging', isLoging);
 router.post('/changepassword', forgetPassword)
 
 //  User  plan detials 
-router.post('/Adduserplanedata', Autho, upload.single('UserImg'), fileValidator,Adddata)
+router.put("/fileValidator", Autho,fileValidator );
+router.post('/Adduserplanedata', Autho, upload.single('UserImg'), Adddata)
 router.post('/SendData', Autho, SendData);
 router.put("/Seatupdate", Autho, Seatupdate);
 router.put("/CancilSubscription", Autho, CancilSubscription);
@@ -59,4 +60,5 @@ router.put('/markcomplete/:id', markCompletcomplain)
 
 
 module.exports = router;
+
 
