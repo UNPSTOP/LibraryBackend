@@ -41,7 +41,7 @@ router.post('/isLoging', isLoging);
 router.post('/changepassword', forgetPassword)
 
 //  User  plan detials 
-router.post("/fileValidator", Autho,fileValidator );
+router.post("/fileValidator", Autho,upload.single('UserImg'),fileValidator );
 router.post('/Adduserplanedata', Autho, upload.single('UserImg'), Adddata)
 router.post('/SendData', Autho, SendData);
 router.put("/Seatupdate", Autho, Seatupdate);
@@ -60,6 +60,7 @@ router.put('/markcomplete/:id', markCompletcomplain)
 
 
 module.exports = router;
+
 
 
 
