@@ -5,7 +5,7 @@ const app = express();
 const cors = require("cors");
 const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
-
+const startDailyUserUpdate = require("./cron/dailyUserUpdate");
 const path = require("path");
 const UserRouter = require("./router/UserRouting.js")
 const PORT = process.env.PORT || 8000;
@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 8000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-    origin:[ "https://library-three-mocha.vercel.app","http://localhost:5173"],
+    origin: ["https://library-three-mocha.vercel.app", "http://localhost:5173"],
     credentials: true
 }));
 app.use(cookieParser());
@@ -21,7 +21,10 @@ app.use(cookieParser());
 mongoose.connect(process.env.MONGO_URL)
     .then(() => {
         console.log("MongoDB Connected...")
+        startDailyUserUpdate();
     })
+
+
 app.use(
     "/upload",
     express.static(path.join(__dirname, "upload"), {
