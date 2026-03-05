@@ -4,7 +4,7 @@ const GroundSeatBooking = require("../models/Groundflor");
 const topSeetBooking = require("../models/Topflor")// adjust path
 
 function startDailyUserUpdate() {
-    cron.schedule("* * * * *", async () => { // runs daily at midnight
+    cron.schedule("0 */24 * * *", async () => { // runs daily at midnight
         try {
             console.log("⏳ Running daily user plan update...");
 
@@ -46,4 +46,5 @@ function startDailyUserUpdate() {
 }
 
 module.exports = startDailyUserUpdate;
+
 
